@@ -55,6 +55,28 @@ class Game {
     }
   }
 
+  void loadMonsterStats() {
+    try {
+      final file =
+          File('/Users/t2024-m0156/Desktop/proj/junny_rpg_game/monters.txt');
+      final lines = file.readAsLinesSync();
+      for (var line in lines) {
+        final stats = line.split(',');
+        if (stats.length != 3) throw FormatException('Invalid monster data');
+
+        String name = stats[0];
+        int health = int.parse(stats[1]);
+        int attack =
+            max(this.character.defense, Random().nextInt(int.parse(stats[2])));
+
+        monsters.add(Monster(name, health, attack));
+      }
+    } catch (e) {
+      print('몬스터 데이터를 불러오는 데 실패했습니다: $e');
+      exit(1);
+    }
+  }
+
   void loadMonstersStats() {}
 
   String getCharacterName() {
