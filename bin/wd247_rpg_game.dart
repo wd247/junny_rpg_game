@@ -7,13 +7,24 @@ class Character {
   int attack;
   int defense;
 
+  Character(this.name, this.health, this.attack, this.defense);
+
   void attackMonster(Monster monster) {
     int damage = max(0, attack - monster.defense);
     monster.health -= damage;
     print('$name이(가) ${monster.name}에게 $damage의 데미지를 입혔습니다.');
   }
 
-  Character(this.name, this.health, this.attack, this.defense);
+  void defend(int monsterAttack) {
+    int damage = monsterAttack - defense;
+    health += damage;
+
+    print('$name이(가) 방어 태세를 취하여 $damage 만큼 체력을 얻었습니다.');
+  }
+
+  void showStatus() {
+    print('$name - 체력: $health, 공격력: $attack, 방어력: $defense');
+  }
 }
 
 class Monster {
@@ -23,6 +34,16 @@ class Monster {
   int defense = 0;
 
   Monster(this.name, this.health, this.attack);
+
+  void attackCharacter(Character character) {
+    int damage = max(0, attack - character.defense);
+    character.health -= damage;
+    print('${this.name}이(가) ${character.name}에게 $damage의 데미지를 입혔습니다.');
+  }
+
+  void showStatus() {
+    print('$name - 체력: $health, 공격력: $attack');
+  }
 }
 
 class Game {
@@ -32,7 +53,7 @@ class Game {
 
   Game() {
     loadCharacterStats();
-    // loadMonsterStats();
+    loadMonsterStats();
   }
 
   void loadCharacterStats() {
@@ -77,7 +98,13 @@ class Game {
     }
   }
 
-  void loadMonstersStats() {}
+  Monster getRandomMonster() {
+    if (monsters.isEmpty) {
+      throw StateError('몬스터 리스트가 비어있습니다.');
+    }
+
+    return monsters[Random().nextInt(monsters.length)];
+  }
 
   String getCharacterName() {
     while (true) {
@@ -94,6 +121,82 @@ class Game {
 
   void startGame() {
     print('게임을 시작합니다!');
+    character.showStatus();
+
+    while (true) {
+      Monster currentMonster = getRandomMonster();
+      print('\n새로운 몬스터가 나타났습니다!');
+      currentMonster.showStatus();
+
+      battle(currentMonster);
+
+      if (character.health <= 0) {
+        print('게임 오버! ${character.name}이(가) 쓰러졌습니다.');
+        saveResult(false);
+        return;
+      }
+
+      if (killedMonster == 2) {
+        print('\n축하합니다! 모든 몬스터를 물리쳤습니다.');
+        saveResult(true);
+        return;
+      }
+
+      print('\n다음 몬스터와 싸우시겠습니까? (y/n): ');
+      String? response = stdin.readLineSync();
+
+      if (response?.toLowerCase() != 'y') {
+        print('게임을 종료합니다.');
+        saveResult(true);
+        return;
+      }
+    }
+  }
+
+  void battle(Monster monster) {
+    while (monster.health > 0 && character.health > 0) {
+      print('\n${character.name}의 턴');
+      stdout.write('행동을 선택하세요 (1: 공격, 2: 방어): ');
+      String? action = stdin.readLineSync();
+      if (action == '1') {
+        character.attackMonster(monster);
+      } else if (action == '2') {
+        character.defend(monster.attack);
+      } else {
+        print('잘못된 입력입니다. 다시 선택해주세요.');
+        continue;
+      }
+
+      if (monster.health <= 0) {
+        print('${monster.name}을(를) 물리쳤습니다!');
+        monsters.remove(monster);
+        killedMonster++;
+        break;
+      }
+
+      print('\n${monster.name}의 턴');
+
+      monster.attackCharacter(character);
+
+      character.showStatus();
+      monster.showStatus();
+    }
+  }
+
+  void saveResult(bool victory) {
+    stdout.write('결과를 저장하시겠습니까? (y/n): ');
+    String? response = stdin.readLineSync();
+    if (response?.toLowerCase() == 'y') {
+      try {
+        final file = File('result.txt');
+        final result = victory ? '승리' : '패배';
+        file.writeAsStringSync(
+            '캐릭터: ${character.name}, 남은 체력: ${character.health}, 결과: $result');
+        print('결과가 저장되었습니다.');
+      } catch (e) {
+        print('결과 저장에 실패했습니다: $e');
+      }
+    }
   }
 }
 
