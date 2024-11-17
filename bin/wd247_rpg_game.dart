@@ -6,6 +6,7 @@ class Character {
   int health;
   int attack;
   int defense;
+  bool usedItem = false; //아이템 사용 여부를 확인하기 위한 변수
 
   Character(this.name, this.health, this.attack, this.defense);
 
@@ -22,6 +23,17 @@ class Character {
     print('$name이(가) 방어 태세를 취하여 $damage 만큼 체력을 얻었습니다.');
   }
 
+  //아이템 사용 함수 추가
+  void useItem() {
+    if (!usedItem) {
+      print('특수 아이템을 사용하여 ${name}의 공격력이 두 배가 됩니다!');
+      attack *= 2; // 한 턴 동안 공격력 2배 처리
+      usedItem = true; // 아이템 사용 완료 처리
+    } else {
+      print('이미 특수 아이템을 사용하셨습니다.');
+    }
+  }
+
   void showStatus() {
     print('$name - 체력: $health, 공격력: $attack, 방어력: $defense');
   }
@@ -32,6 +44,7 @@ class Monster {
   int health;
   int attack;
   int defense = 0;
+  int increaseDefenceCount = 0; // 방어력 증가 턴 카운팅 변수
 
   Monster(this.name, this.health, this.attack);
 
@@ -44,6 +57,13 @@ class Monster {
   void showStatus() {
     print('$name - 체력: $health, 공격력: $attack');
   }
+
+  //몬스터의 방어력 증가 기능 추가
+  void increaseDefence() {
+    defense += 2; // 방어력 증가략
+    increaseDefenceCount = 0; // 턴 카운터 초기화
+    print('${name}의 방어력이 증가했습니다! 현재 방어력: $defense');
+  }
 }
 
 class Game {
@@ -53,6 +73,7 @@ class Game {
 
   Game() {
     loadCharacterStats();
+    giveBonusHealth(); // 도전1
     loadMonsterStats();
   }
 
@@ -73,6 +94,15 @@ class Game {
     } catch (e) {
       print('캐릭터 데이터를 불러오는 데 실패했습니다: $e');
       exit(1);
+    }
+  }
+
+  // 캐릭터의 체력 증가 기능 추가 함수
+  void giveBonusHealth() {
+    Random random = Random();
+    if (random.nextInt(30) == 0) {
+      character.health += 10;
+      print('보너스 체력을 얻었습니다! 현재 체력: ${character.health}');
     }
   }
 
@@ -156,15 +186,23 @@ class Game {
   void battle(Monster monster) {
     while (monster.health > 0 && character.health > 0) {
       print('\n${character.name}의 턴');
-      stdout.write('행동을 선택하세요 (1: 공격, 2: 방어): ');
+      stdout.write('행동을 선택하세요 (1: 공격, 2: 방어, 3: 아이템 사용): ');
       String? action = stdin.readLineSync();
       if (action == '1') {
         character.attackMonster(monster);
       } else if (action == '2') {
         character.defend(monster.attack);
+      } else if (action == '3') {
+        character.useItem(); // 3 입력 시 아이템 사용 함수 호출
       } else {
         print('잘못된 입력입니다. 다시 선택해주세요.');
         continue;
+      }
+
+      // 카운트 변수 increateDefenceCount를 1씩 증가
+      monster.increaseDefenceCount++;
+      if (monster.increaseDefenceCount >= 3) {
+        monster.increaseDefence(); //3턴마다 방어력 증가 함수 호출
       }
 
       if (monster.health <= 0) {
